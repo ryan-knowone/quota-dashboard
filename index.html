@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quota Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Quota Dashboard</h1>
+      <p class="subtitle">Local-only AI subscription quota tracker</p>
+    </header>
+
+    <section class="controls">
+      <details open>
+        <summary>Configure tokens</summary>
+        <div class="token-form">
+          <label>
+            <span>Claude Code Max OAuth token</span>
+            <input type="password" id="claude-token" placeholder="sk-..." autocomplete="off" />
+          </label>
+          <label>
+            <span>Kimi API key</span>
+            <input type="password" id="kimi-token" placeholder="Bearer token" autocomplete="off" />
+          </label>
+          <label>
+            <span>Z.ai Bearer token</span>
+            <input type="password" id="zai-token" placeholder="Bearer token" autocomplete="off" />
+          </label>
+          <div class="form-actions">
+            <button id="save-tokens" class="secondary">Save tokens (session only)</button>
+            <label class="toggle">
+              <input type="checkbox" id="mock-mode" />
+              <span>Use mock data</span>
+            </label>
+          </div>
+          <p class="hint">
+            Tokens stay in your browser's memory and are never sent to any server except the provider APIs.
+          </p>
+        </div>
+      </details>
+
+      <div class="refresh-bar">
+        <button id="refresh-all" class="primary">Refresh all</button>
+        <span id="last-refreshed">Not refreshed yet</span>
+      </div>
+    </section>
+
+    <main id="cards" class="cards">
+      <!-- Cards rendered by app.js -->
+    </main>
+
+    <footer>
+      <div class="support">
+        <p>Find this useful?</p>
+        <a id="tip-link" href="#" target="_blank" rel="noopener">Support this project</a>
+        <span class="placeholder">(wallet details coming soon)</span>
+      </div>
+      <p class="fineprint">
+        Open source · Runs entirely on your machine ·
+        <a href="https://github.com/ryan-knowone/quota-dashboard" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
