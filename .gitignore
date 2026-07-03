@@ -4,3 +4,14 @@ node_modules/
 .env
 .vscode/
 .idea/
+
+# Worker state — not part of the published app
+.wake-prompt.txt
+.wake.lock
+ARMED
+MANDATE.md
+NEEDS-BOSS.md
+REPORT.md
+STATE.md
+JOURNAL/
+wake.sh
