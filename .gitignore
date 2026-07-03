@@ -15,3 +15,5 @@ REPORT.md
 STATE.md
 JOURNAL/
 wake.sh
+INBOX/
+OUTBOX/
