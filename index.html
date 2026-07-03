@@ -22,7 +22,7 @@
             <input type="password" id="claude-token" placeholder="sk-..." autocomplete="off" />
           </label>
           <label>
-            <span>Kimi API key</span>
+            <span>Kimi platform API key (from platform.moonshot.cn, not the Claude Code proxy key)</span>
             <input type="password" id="kimi-token" placeholder="Bearer token" autocomplete="off" />
           </label>
           <label>
@@ -55,8 +55,12 @@
     <footer>
       <div class="support">
         <p>Find this useful?</p>
-        <a id="tip-link" href="#" target="_blank" rel="noopener">Support this project</a>
-        <span class="placeholder">(wallet details coming soon)</span>
+        <p class="tip-line">
+          Tip USDC on Base:
+          <code class="tip-address" id="tip-address" title="0x1e2D7F8715E8180816c0236A5c4F21596C5b9c9e">0x1e2D…5c9e</code>
+          <button id="copy-tip-address" class="secondary small" type="button">Copy</button>
+          <a id="tip-wallet-link" class="button small" href="ethereum:0x1e2D7F8715E8180816c0236A5c4F21596C5b9c9e@8453/transfer?address=0x1e2D7F8715E8180816c0236A5c4F21596C5b9c9e" target="_blank" rel="noopener">Open in wallet</a>
+        </p>
       </div>
       <p class="fineprint">
         Open source · Runs entirely on your machine ·

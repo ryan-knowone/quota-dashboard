@@ -17,8 +17,12 @@ AI quota data is sensitive. Handing your API keys or OAuth tokens to a third-par
 | Provider | Endpoint | What you need |
 |---|---|---|
 | Claude Code Max | `https://api.anthropic.com/api/oauth/usage` | OAuth token from Claude Code Max |
-| Kimi | `https://api.kimi.com/coding/v1/usages` | API key from Kimi platform |
+| Kimi | `https://api.kimi.com/coding/v1/usages` | API key from [Kimi platform](https://platform.moonshot.cn/) |
 | Z.ai | `https://api.z.ai/api/monitor/usage/quota/limit` | Bearer token from Z.ai |
+
+**Important:** Kimi has two different keys. The quota endpoint needs a key from the Kimi platform (above). The `sk-kimi-...` key used by Claude Code's Anthropic-compatible proxy does **not** work here. If you paste the wrong key, you will see an "Invalid token" error.
+
+When a provider returns multiple quota windows, the dashboard shows the highest-utilization window so you see the tightest constraint first.
 
 ## Run locally
 
@@ -51,6 +55,8 @@ python3 -m http.server 8080
 1. Log in to the [Kimi platform](https://platform.moonshot.cn/).
 2. Go to your account / API keys section.
 3. Create or copy an existing API key.
+
+**Do not use your Claude Code proxy key** (`sk-kimi-...`). That key is for the Anthropic-compatible chat endpoint (`api.kimi.com/coding/v1/chat/completions`) and will return `Invalid Authentication` on the usage endpoint. The usage endpoint requires a platform API key from `platform.moonshot.cn`.
 
 ### Z.ai Bearer token
 
@@ -85,9 +91,10 @@ Some provider APIs may block requests from `file://` origins. If you see CORS er
 
 ## Support this project
 
-If you find this useful, you can support ongoing development:
+If you find this useful, you can tip USDC on Base:
 
-- Base Pay / EIP-681 link — coming soon (wallet details pending)
+- Address: `0x1e2D7F8715E8180816c0236A5c4F21596C5b9c9e`
+- Click **Copy** in the app footer, or use the **Open in wallet** button for an EIP-681 deep link.
 
 ## License
 

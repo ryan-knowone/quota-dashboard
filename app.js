@@ -62,6 +62,7 @@ function bindEvents() {
   document.getElementById("mock-mode").addEventListener("change", () => {
     refreshAll();
   });
+  document.getElementById("copy-tip-address")?.addEventListener("click", copyTipAddress);
 
   // Allow Enter key in token fields to save.
   document.querySelectorAll(".token-form input").forEach((input) => {
@@ -69,6 +70,19 @@ function bindEvents() {
       if (e.key === "Enter") saveTokens();
     });
   });
+}
+
+function copyTipAddress() {
+  const fullAddress = "0x1e2D7F8715E8180816c0236A5c4F21596C5b9c9e";
+  navigator.clipboard.writeText(fullAddress).then(
+    () => {
+      const btn = document.getElementById("copy-tip-address");
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => (btn.textContent = original), 1500);
+    },
+    () => alert("Could not copy address automatically. Address: " + fullAddress)
+  );
 }
 
 function saveTokens() {
@@ -91,10 +105,7 @@ async function refreshAll() {
           ? await fetchMock(provider)
           : await fetchProvider(provider);
       } catch (err) {
-        state[provider.key] = {
-          ok: false,
-          error: err.message || "Unknown error",
-        };
+        state[provider.key] = normalizeError(err);
       }
     })
   );
@@ -102,6 +113,30 @@ async function refreshAll() {
   setLoading(false);
   renderAll();
   lastRefreshedEl.textContent = `Last refreshed: ${new Date().toLocaleTimeString()}`;
+}
+
+function normalizeError(err) {
+  const raw = err?.message || String(err) || "Unknown error";
+  let friendly = raw;
+  let category = "unknown";
+
+  if (/\b401\b|403|Unauthorized|Forbidden|Invalid Authentication/i.test(raw)) {
+    friendly = "Invalid token. Double-check you are using the right key type (see README).";
+    category = "auth";
+  } else if (/CORS|NetworkError|Failed to fetch|TypeError/i.test(raw)) {
+    friendly = "CORS or network error. Try running through a local static server instead of file://.";
+    category = "network";
+  } else if (/\b(404|500|502|503)\b/i.test(raw)) {
+    friendly = "Provider API error. The endpoint may be down or changed.";
+    category = "provider";
+  }
+
+  return {
+    ok: false,
+    error: friendly,
+    raw,
+    category,
+  };
 }
 
 function setLoading(loading) {
@@ -113,9 +148,7 @@ function setLoading(loading) {
 // ---------- Mock data ----------
 
 async function fetchMock(provider) {
-  // Simulate network delay so the UI feels realistic.
-  await delay(300 + Math.random() * 400);
-
+  // Mock data returns immediately so screenshots/tests never catch an empty refreshing state.
   switch (provider.key) {
     case "claude":
       return {
@@ -129,11 +162,19 @@ async function fetchMock(provider) {
     case "kimi":
       return {
         ok: true,
-        used: 45,
-        remaining: 55,
-        resetTime: tomorrowAt(9),
-        window: "Weekly",
-        raw: { usage: 450, limits: [{ limit: 1000, used: 450, window: "weekly" }] },
+        used: 46,
+        remaining: 54,
+        resetTime: new Date("2026-07-08T17:55:16.381213Z"),
+        window: "Weekly shared pool",
+        raw: {
+          usage: { limit: "100", used: "46", remaining: "54", resetTime: "2026-07-08T17:55:16.381213Z" },
+          limits: [
+            {
+              window: { duration: 300, timeUnit: "TIME_UNIT_MINUTE" },
+              detail: { limit: "100", used: "19", remaining: "81", resetTime: "2026-07-03T10:55:16.381213Z" },
+            },
+          ],
+        },
       };
     case "zai":
       return {
@@ -189,13 +230,31 @@ async function fetchClaude(token) {
 
   const data = await res.json();
   // Documented shape: { five_hour: number, seven_day: number } utilization percentages.
-  const used = typeof data.seven_day === "number" ? data.seven_day : data.five_hour;
+  const fiveHour = Number(data.five_hour);
+  const sevenDay = Number(data.seven_day);
+  const hasFive = !isNaN(fiveHour);
+  const hasSeven = !isNaN(sevenDay);
+
+  let used, window;
+  if (hasFive && hasSeven) {
+    used = Math.max(fiveHour, sevenDay);
+    window = used === fiveHour ? "5-hour" : "7-day";
+  } else if (hasSeven) {
+    used = sevenDay;
+    window = "7-day";
+  } else if (hasFive) {
+    used = fiveHour;
+    window = "5-hour";
+  } else {
+    return { ok: false, error: "Unexpected response shape from Claude." };
+  }
+
   return {
     ok: true,
     used,
     remaining: 100 - used,
     resetTime: tomorrowAt(0),
-    window: "7-day",
+    window,
     raw: data,
   };
 }
@@ -214,18 +273,47 @@ async function fetchKimi(token) {
   }
 
   const data = await res.json();
-  // Documented shape: { usage: number, limits: [{ limit, used, window }] }
-  const limit = data.limits?.[0];
-  const used = limit
-    ? Math.round((limit.used / limit.limit) * 100)
-    : Math.min(100, data.usage || 0);
+  // Real shape: { usage: { limit, used, remaining, resetTime }, limits: [{ window, detail: { limit, used, remaining, resetTime } }] }
+  // Values are strings. We show the highest-utilization window so the user sees the tightest constraint.
+  const windows = [];
+
+  const weekly = data.usage || {};
+  if (weekly.limit != null && weekly.used != null) {
+    windows.push({
+      label: "Weekly shared pool",
+      used: Number(weekly.used),
+      limit: Number(weekly.limit),
+      resetTime: weekly.resetTime,
+    });
+  }
+
+  for (const l of data.limits || []) {
+    const detail = l.detail || {};
+    if (detail.limit != null && detail.used != null) {
+      const unit = (l.window?.timeUnit || "").replace("TIME_UNIT_", "").toLowerCase();
+      const duration = l.window?.duration || "?";
+      windows.push({
+        label: `${duration}-${unit} rolling`,
+        used: Number(detail.used),
+        limit: Number(detail.limit),
+        resetTime: detail.resetTime,
+      });
+    }
+  }
+
+  if (!windows.length) {
+    return { ok: false, error: "Unexpected response shape from Kimi." };
+  }
+
+  const top = windows.reduce((a, b) => (b.used / b.limit > a.used / a.limit ? b : a));
+  const used = Math.round((top.used / top.limit) * 100);
 
   return {
     ok: true,
     used,
     remaining: 100 - used,
-    resetTime: tomorrowAt(9),
-    window: limit?.window || "Weekly",
+    resetTime: top.resetTime ? new Date(top.resetTime) : tomorrowAt(9),
+    window: top.label,
     raw: data,
   };
 }
@@ -244,19 +332,21 @@ async function fetchZai(token) {
   }
 
   const data = await res.json();
-  // Documented shape: { data: { limits: [{ percentage, nextResetTime }] } }
-  const limit = data.data?.limits?.[0];
-  const used = typeof limit?.percentage === "number" ? limit.percentage : 0;
-  const resetTime = limit?.nextResetTime
-    ? new Date(limit.nextResetTime)
-    : inHours(24);
+  // Documented shape: { data: { limits: [{ percentage, nextResetTime, window? }] } }
+  const limits = data.data?.limits || [];
+  if (!limits.length) {
+    return { ok: false, error: "Unexpected response shape from Z.ai." };
+  }
+
+  const top = limits.reduce((a, b) => (Number(b.percentage) > Number(a.percentage) ? b : a));
+  const used = Number(top.percentage) || 0;
 
   return {
     ok: true,
     used,
     remaining: 100 - used,
-    resetTime,
-    window: "Window",
+    resetTime: top.nextResetTime ? new Date(top.nextResetTime) : inHours(24),
+    window: top.window || "Window",
     raw: data,
   };
 }
@@ -281,10 +371,11 @@ function renderCard(provider) {
   }
 
   if (!s.ok) {
+    const errorHtml = formatErrorMessage(s.error, s.raw);
     return `
       <article class="card" data-provider="${provider.key}">
         ${renderHeader(provider, "error")}
-        <p class="error-message">${escapeHtml(s.error)}</p>
+        <p class="error-message">${errorHtml}</p>
         <p class="last-updated"></p>
       </article>
     `;
@@ -348,10 +439,6 @@ function usageStatus(used) {
 
 // ---------- Helpers ----------
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function tomorrowAt(hour) {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -381,6 +468,15 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function formatErrorMessage(friendly, raw) {
+  const safeFriendly = escapeHtml(friendly);
+  const safeRaw = raw && raw !== friendly ? escapeHtml(raw) : "";
+  const details = safeRaw
+    ? ` <details class="error-details"><summary>Details</summary><code>${safeRaw}</code></details>`
+    : "";
+  return `${safeFriendly}${details}`;
 }
 
 // Start.

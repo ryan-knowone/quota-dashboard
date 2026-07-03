@@ -270,6 +270,40 @@ button.secondary {
   margin-top: 8px;
 }
 
+.error-message .hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+.error-message code {
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.error-details {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.error-details code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
 .last-updated {
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -298,6 +332,41 @@ footer {
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+}
+
+.tip-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.tip-address {
+  background: var(--surface-2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text);
+}
+
+button.small,
+a.button.small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .placeholder {
