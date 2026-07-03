@@ -341,7 +341,7 @@ function renderHeader(provider, statusType) {
 }
 
 function usageStatus(used) {
-  if (used >= 85) return { class: "high", barClass: "high" };
+  if (used >= 85) return { class: "error", barClass: "high" };
   if (used >= 60) return { class: "warn", barClass: "medium" };
   return { class: "ok", barClass: "low" };
 }
