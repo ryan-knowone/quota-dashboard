@@ -1,0 +1,16 @@
+{
+  "name": "quota-dashboard",
+  "version": "1.0.0",
+  "description": "Local-only AI subscription quota tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["quota", "dashboard", "claude", "kimi", "z.ai"],
+  "author": "Ryan Knowone",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

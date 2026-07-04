@@ -1,15 +1,16 @@
 # Quota Dashboard
 
-A privacy-first, local-only web dashboard that shows remaining AI subscription quota across Claude Code Max, Kimi, and Z.ai.
+A privacy-first, local web dashboard that shows remaining AI subscription quota across Claude Code Max, Kimi, and Z.ai.
 
-Your credentials stay on your machine. The app is a static HTML/JS page that runs entirely in your browser and talks directly to the provider APIs.
+Your credentials stay on your machine. The app runs as a small local Node server; the browser sends keys to that local server, and the server calls the provider APIs. This avoids browser CORS restrictions and keeps your keys off third-party infrastructure.
 
 ## Why local-only?
 
-AI quota data is sensitive. Handing your API keys or OAuth tokens to a third-party server is a trust risk. This dashboard:
+AI quota data is sensitive. Handing your API keys or OAuth tokens to a hosted service is a trust risk. This dashboard:
 
-- Never sends your tokens to any server except the provider APIs.
-- Stores tokens only in browser memory for the session (not in localStorage or cookies).
+- Runs a server on `localhost` that you control.
+- Stores tokens only in memory (browser tab + server process) for the session.
+- Never writes keys to disk, logs, localStorage, or cookies.
 - Is fully open source so you can audit exactly what it does.
 
 ## Supported providers (Phase 1)
@@ -20,24 +21,31 @@ AI quota data is sensitive. Handing your API keys or OAuth tokens to a third-par
 | Kimi | `https://api.kimi.com/coding/v1/usages` | API key from [Kimi platform](https://platform.moonshot.cn/) |
 | Z.ai | `https://api.z.ai/api/monitor/usage/quota/limit` | Bearer token from Z.ai |
 
-**Important:** Kimi has two different keys. The quota endpoint needs a key from the Kimi platform (above). The `sk-kimi-...` key used by Claude Code's Anthropic-compatible proxy does **not** work here. If you paste the wrong key, you will see an "Invalid token" error.
+**Important:** The quota endpoint accepts the same `sk-kimi-...` API key used by Claude Code's Anthropic-compatible proxy (verified). If your proxy key returns "Invalid token", create a dedicated key from the Kimi platform above.
 
 When a provider returns multiple quota windows, the dashboard shows the highest-utilization window so you see the tightest constraint first.
 
 ## Run locally
 
-No build step is required.
+Requires Node.js 18+.
 
 ```bash
 # Clone or download the repo
 cd quota-dashboard
 
-# Option 1: open directly in your browser
-open index.html
+# Install dependencies (currently none; this prepares the project for future deps)
+npm install
 
-# Option 2: serve with any static server
-python3 -m http.server 8080
-# then visit http://localhost:8080
+# Start the local server
+npm start
+
+# Open http://localhost:3000 in your browser
+```
+
+By default the server binds to `127.0.0.1:3000`. You can override this:
+
+```bash
+HOST=0.0.0.0 PORT=8080 npm start
 ```
 
 ## Get your tokens
@@ -56,7 +64,7 @@ python3 -m http.server 8080
 2. Go to your account / API keys section.
 3. Create or copy an existing API key.
 
-**Do not use your Claude Code proxy key** (`sk-kimi-...`). That key is for the Anthropic-compatible chat endpoint (`api.kimi.com/coding/v1/chat/completions`) and will return `Invalid Authentication` on the usage endpoint. The usage endpoint requires a platform API key from `platform.moonshot.cn`.
+**Verified:** the same `sk-kimi-...` key used by Claude Code's Anthropic-compatible proxy works for the usage endpoint. If your proxy key returns `Invalid Authentication`, create a dedicated platform API key from `platform.moonshot.cn`.
 
 ### Z.ai Bearer token
 
@@ -68,21 +76,38 @@ python3 -m http.server 8080
 
 ## Mock mode
 
-Toggle "Use mock data" to preview the UI without real tokens. This is useful for development and demos.
+Toggle **Use mock data** to preview the UI without real tokens. This is useful for development and demos.
+
+You can also open `http://localhost:3000/?mock=1` to start with mock data already loaded.
+
+## Environment variables (optional)
+
+You can pre-seed tokens from the environment so you do not have to paste them into the UI every session:
+
+```bash
+CLAUDE_TOKEN="your-token" KIMI_TOKEN="your-token" ZAI_TOKEN="your-token" npm start
+```
+
+These values stay in the server process memory only. They are never exposed to the client or written to disk.
 
 ## Development
 
 The codebase is intentionally small:
 
+- `server.js` — local Node server, static file serving, provider API proxying
 - `index.html` — page structure
-- `app.js` — fetch logic and rendering
+- `app.js` — client fetch logic and rendering
 - `styles.css` — styling
 
 Edit any file and refresh the browser. No bundler needed.
 
-## CORS note
+## Security / privacy notes
 
-Some provider APIs may block requests from `file://` origins. If you see CORS errors, run the app through a local static server (see "Run locally" above).
+- Keys are sent from the browser to the local server via HTTP (localhost only).
+- The server does not log request bodies.
+- Keys are never persisted.
+- There is no telemetry, analytics, or external calling except to the providers you configure.
+- Use the **Delete keys** button at any time to clear tokens from the browser tab.
 
 ## Roadmap
 

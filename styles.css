@@ -156,6 +156,11 @@ button.secondary {
   border: 1px solid var(--border);
 }
 
+button.secondary.danger {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 #last-refreshed {
   color: var(--text-muted);
   font-size: 0.9rem;
